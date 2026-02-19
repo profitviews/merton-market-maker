@@ -13,20 +13,27 @@ ProfitView strategy: Merton theoretical price vs market price for BitMEX XBTUSDT
 This version requires the C++ module `merton_online_calibrator.so`.
 Parameters are updated online from tick flow in the C++ calibrator.
 """
+from dotenv import load_dotenv
+
+load_dotenv()
+
 from profitview import Link, logger, cron
 import math
+import os
 import threading
 import requests
 
 import merton_online_calibrator as moc
 
 # -----------------------------------------------------------------------------
-# Initial parameters for C++ calibrator seed
+# Initial parameters for C++ calibrator seed (from .env, fallback to defaults).
+# For better cold-start behaviour, run offline MLE calibration in merton.ipynb
+# and set these in .env from the calibration output.
 # -----------------------------------------------------------------------------
-SIGMA = 0.44
-LAMBDA = 20.0
-MU_J = 0.003
-DELTA_J = 0.01
+SIGMA = float(os.getenv("MERTON_SIGMA", 0.44))
+LAMBDA = float(os.getenv("MERTON_LAMBDA", 20.0))
+MU_J = float(os.getenv("MERTON_MU_J", 0.003))
+DELTA_J = float(os.getenv("MERTON_DELTA_J", 0.01))
 
 # Horizon for theoretical price (8h = next funding window)
 T_HOURS = 8
