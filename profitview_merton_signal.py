@@ -112,7 +112,7 @@ class Signals(Link):
                 p = self._cpp_calibrator.params()
                 with self._lock:
                     self._sigma = float(p.sigma)
-                    self._lam = float(getattr(p, "lambda"))
+                    self._lam = float(getattr(p, "lambda"))  # lambda is a Python keyword
                     self._mu_j = float(p.mu_j)
                     self._delta_j = float(p.delta_j)
         except Exception as e:
