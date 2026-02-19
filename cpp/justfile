@@ -2,6 +2,7 @@ set shell := ["bash", "-cu"]
 
 image := env_var_or_default("IMAGE_NAME", "merton-refl-build")
 pyver := env_var_or_default("PY_VER", "3.9")
+ubuntu_ver := env_var_or_default("UBUNTU_VERSION", "22.04")
 root := justfile_directory()
 
 default:
@@ -9,7 +10,7 @@ default:
 
 docker-build:
   docker build -t {{image}} \
-    --build-arg UBUNTU_VERSION=22.04 \
+    --build-arg UBUNTU_VERSION={{ubuntu_ver}} \
     --build-arg PYTHON_VERSION={{pyver}} \
     -f {{root}}/Dockerfile \
     {{root}}
