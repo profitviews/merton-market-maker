@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# Run p2996 clang++ from the merton-refl-build container. Mounts current directory.
+# Usage: merton-clang++ [options] -o prog prog.cpp
+# Ensure the image exists first: cd cpp && just docker-build
+set -e
+IMAGE_NAME="${IMAGE_NAME:-merton-refl-build}"
+docker run --rm -v "$(pwd):/workspace" -w /workspace "$IMAGE_NAME" clang++ "$@"

@@ -1,0 +1,55 @@
+set shell := ["bash", "-cu"]
+
+image := env_var_or_default("IMAGE_NAME", "merton-refl-build")
+pyver := env_var_or_default("PY_VER", "3.9")
+root := justfile_directory()
+
+default:
+  @just test
+
+docker-build:
+  docker build -t {{image}} \
+    --build-arg UBUNTU_VERSION=22.04 \
+    --build-arg PYTHON_VERSION={{pyver}} \
+    -f {{root}}/Dockerfile \
+    {{root}}
+
+build-host: docker-build
+  docker run --rm -v "{{root}}:/workspace" {{image}} bash -lc "\
+    rm -rf /workspace/build && \
+    cmake -S /workspace -B /workspace/build -G Ninja \
+      -DCMAKE_TOOLCHAIN_FILE=/workspace/toolchain-p2996.cmake \
+      -DPython3_EXECUTABLE=/usr/bin/python{{pyver}} && \
+    cmake --build /workspace/build"
+
+test-host: build-host
+  docker run --rm -v "{{root}}:/workspace" {{image}} bash -lc "\
+    PYTHONPATH=/workspace/build python{{pyver}} -m pytest /workspace/tests"
+
+# Interactive shell with clang++ (p2996) and QuantLib on PATH for ad-hoc compilation.
+shell:
+  docker run -it --rm -v "{{root}}:/workspace" -w /workspace {{image}} bash
+
+# Run p2996 clang++ in container; mounts current dir. Usage: just clang-pp -- -std=c++20 -o prog prog.cpp
+clang-pp *ARGS:
+  docker run --rm -v "$$(pwd):/workspace" -w /workspace {{image}} clang++ {{ARGS}}
+
+build-local:
+  rm -rf {{root}}/build
+  cmake -S {{root}} -B {{root}}/build -G Ninja \
+    -DCMAKE_TOOLCHAIN_FILE={{root}}/toolchain-p2996.cmake \
+    -DPython3_EXECUTABLE=/usr/bin/python{{pyver}}
+  cmake --build {{root}}/build
+
+test-local: build-local
+  PYTHONPATH={{root}}/build python{{pyver}} -m pytest {{root}}/tests
+
+# Smart defaults:
+# - On host (docker available): run host recipes
+# - In container (docker unavailable): run local recipes
+build:
+  if command -v docker >/dev/null 2>&1; then just build-host; else just build-local; fi
+
+test:
+  if command -v docker >/dev/null 2>&1; then just test-host; else just test-local; fi
+

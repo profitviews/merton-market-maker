@@ -1,0 +1,5 @@
+{
+  "terminal.integrated.env.linux": {
+    "PYENV_VERSION": "merton-market-maker"
+  }
+}
