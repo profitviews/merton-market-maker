@@ -1,15 +1,15 @@
 cmake_minimum_required(VERSION 3.20)
-project(jd_core LANGUAGES CXX)
+project(merton_core LANGUAGES CXX)
 
 # Do not force a C++ standard here.
 # The reflection toolchain flags provide the required language mode (e.g. -std=c++2c).
 
-set(JD_CORE_SOURCES
+set(MERTON_CORE_SOURCES
     src/merton_online_calibrator.cpp
 )
 
-add_library(jd_core STATIC ${JD_CORE_SOURCES})
-target_include_directories(jd_core
+add_library(merton_core STATIC ${MERTON_CORE_SOURCES})
+target_include_directories(merton_core
     PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
@@ -40,8 +40,8 @@ if(NOT JD_QUANTLIB_INCLUDE_DIR OR NOT JD_QUANTLIB_LIBRARY)
         "QuantLib not found. Expected headers/libs under ${JD_QL_ROOT}.\n"
         "Set REFLECT_PY_STRAT_QL_INSTALL_DIR or install QuantLib dev libs.")
 endif()
-target_include_directories(jd_core PRIVATE "${JD_QUANTLIB_INCLUDE_DIR}")
-target_link_libraries(jd_core PUBLIC "${JD_QUANTLIB_LIBRARY}")
+target_include_directories(merton_core PRIVATE "${JD_QUANTLIB_INCLUDE_DIR}")
+target_link_libraries(merton_core PUBLIC "${JD_QUANTLIB_LIBRARY}")
 
 # Python & pybind11 headers
 # Prefer interpreter matching Docker ENV PYTHON_VERSION when available.
@@ -102,7 +102,7 @@ target_include_directories(merton_online_calibrator
 )
 target_link_libraries(merton_online_calibrator
     PRIVATE
-        jd_core
+        merton_core
         Python3::Module
 )
 
@@ -130,10 +130,10 @@ if(NOT DEFINED REFLECT_PY_STRAT_INCLUDE_DIRS)
     )
 endif()
 
-target_compile_options(jd_core PRIVATE ${REFLECT_PY_STRAT_CXX_FLAGS})
+target_compile_options(merton_core PRIVATE ${REFLECT_PY_STRAT_CXX_FLAGS})
 target_compile_options(merton_online_calibrator PRIVATE ${REFLECT_PY_STRAT_CXX_FLAGS})
 target_link_options(merton_online_calibrator PRIVATE ${REFLECT_PY_STRAT_LINK_FLAGS})
-target_include_directories(jd_core PRIVATE ${REFLECT_PY_STRAT_INCLUDE_DIRS})
+target_include_directories(merton_core PRIVATE ${REFLECT_PY_STRAT_INCLUDE_DIRS})
 target_include_directories(merton_online_calibrator PRIVATE ${REFLECT_PY_STRAT_INCLUDE_DIRS})
 
 # Explicit runtime linkage for portable extension loading.

@@ -31,7 +31,7 @@
 #include <ql/time/date.hpp>
 #include <ql/time/daycounters/actual365fixed.hpp>
 
-namespace jd {
+namespace merton {
 
 namespace {
 
@@ -367,5 +367,5 @@ double OnlineMertonCalibrator::estimate_dt_years() const {
     return static_cast<double>(median_us) / 1e6 / kSecsPerYear;
 }
 
-}  // namespace jd
+}  // namespace merton
 

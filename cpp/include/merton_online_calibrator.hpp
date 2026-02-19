@@ -5,7 +5,7 @@
 #include <optional>
 #include <vector>
 
-namespace jd {
+namespace merton {
 
 struct MertonParams {
     double sigma = 0.44;
@@ -57,5 +57,5 @@ private:
     std::size_t returns_since_last_update_ = 0;
 };
 
-}  // namespace jd
+}  // namespace merton
 

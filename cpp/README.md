@@ -148,7 +148,7 @@ for each market tick (price, ts_us):
 
 This repo includes `cpp/CMakeLists.txt` for:
 
-- static core library `jd_core`
+- static core library `merton_core`
 - Python extension module `merton_online_calibrator.so`
 
 Example:
