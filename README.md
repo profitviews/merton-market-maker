@@ -1,20 +1,17 @@
-# Merton Market Maker (BitMEX XBTUSDT)
+# Merton Market Maker
 
 This repository implements an end-to-end Merton jump-diffusion workflow for:
 
 - offline calibration from historical data
 - real-time theoretical price computation
-- optional C++ acceleration for online/adaptive parameter updates
-
-Only private local path config is stored in `.env` (via `python-dotenv`), so
-machine-specific offline data locations stay out of source control.
+- C++ acceleration for online/adaptive parameter updates
 
 ## What This Repo Contains
 
 - `jump_diff.ipynb`  
   Notebook for data loading, return construction, MLE calibration, and fit visualization.
 - `profitview_merton_signal.py`  
-  ProfitView strategy script that consumes live market updates and computes theoretical value.
+  [ProfitView](https://profitview.net) strategy script that consumes live market updates and computes theoretical value.
 - `cpp/`  
   C++ core (`OnlineMertonCalibrator`) + reflection-based Python extension module build.
 
@@ -121,12 +118,7 @@ Current runtime implementation in `cpp/` is:
 - `OnlineMertonCalibrator::update_tick(...)` for rolling return ingestion
 - `OnlineMertonCalibrator::maybe_update_params()` for gated local online updates
 - `OnlineMertonCalibrator::fair_value(...)` for fast expectation pricing
-- `OnlineMertonCalibrator::fair_value_quantlib(...)` as a QuantLib-based helper path
-
-Important correction: the repo does **not** currently price with a full QuantLib
-`Merton76Process` engine in the hot loop. QuantLib is integrated through the helper
-forward/carry path (`fair_value_quantlib`) while the main low-latency loop uses the
-custom calibrator/pricer logic.
+- `OnlineMertonCalibrator::fair_value_quantlib(...)` To show how QuantLib easily integrated.
 
 ### Phase C: Python Integration Layer
 
@@ -135,14 +127,14 @@ custom calibrator/pricer logic.
 - Member/field exposure is generated through C++26 compile-time reflection helpers in
   `cpp/include/reflection_engine.hpp`
 
-The ProfitView strategy (`profitview_merton_signal.py`) consumes this module directly.
+The [ProfitView](https://profitview.net) strategy (`profitview_merton_signal.py`) consumes this module directly.
 
 ## Typical Workflow
 
 1. **Offline calibration (Notebook)**
    - Load historical data (BitMEX API or local Parquet trades)
    - Build returns (resampled bars)
-   - Run MLE to estimate `sigma, lambda, mu_j, delta_j`
+   - Run MLE to estimate `sigma, lambda, mu_j, delta_j` (these will be put in `.env`)
 
 2. **Build C++ module (optional but recommended for runtime adaptation)**
    - In `cpp/`, run `just test`
@@ -157,7 +149,8 @@ The ProfitView strategy (`profitview_merton_signal.py`) consumes this module dir
 
 1. Copy `.env.example` to `.env`
 2. Set `MERTON_MARKET_MAKER_DATA_PATH` to your local parquet directory
-3. Notebook uses this value if present; all other defaults remain in code
+3. Add Merton parameters (above)
+4. Notebook uses these value if present; all other defaults remain in code
 
 ## C++ Module (`cpp/`)
 
@@ -193,4 +186,3 @@ The Docker and module build are aligned with:
 
 - If you use the compiled `.so`, validate/import it with Python 3.9-compatible runtime.
 - Notebook calibration and C++ online adaptation can be used independently.
-- `.env` is gitignored; keep only private local filesystem paths there.

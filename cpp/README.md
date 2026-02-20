@@ -42,7 +42,7 @@ Python usage pattern:
 3. For quote comparison: `fair_value(mid, q_annual, T_years, r)`
 4. Periodically pull `params()` for logging / persistence
 
-QuantLib integration:
+QuantLib integration (for illustration purposes):
 
 - `fair_value_quantlib(...)` builds flat `r`/`q` curves with QuantLib
 - computes forward from discount factors (`S0 * Dq / Dr`)
@@ -221,8 +221,7 @@ merton-clang++ -std=c++2c -freflection -freflection-latest -fexpansion-statement
 For QuantLib, add `-I/opt/ql_install/include -L/opt/ql_install/lib -lQuantLib` and `-DQL_USE_STD_SHARED_PTR` when linking.
 
 Requirements:
-
-- `cmake`
-- Python development headers for your target interpreter
-- `pybind11` and `pytest` installed in that interpreter (e.g. `python -m pip install pybind11 pytest`)
+- `just`
+- Docker
+Everything else will be pulled into the container.
 
