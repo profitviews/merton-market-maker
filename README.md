@@ -186,3 +186,15 @@ The Docker and module build are aligned with:
 
 - If you use the compiled `.so`, validate/import it with Python 3.9-compatible runtime.
 - Notebook calibration and C++ online adaptation can be used independently.
+
+## References
+
+**Model**
+- Merton, R.C. (1976). Option pricing when underlying stock returns are discontinuous. *Journal of Financial Economics*, 3(1–2), 125–144.
+- Honoré, P. (1998). Pitfalls in estimating jump-diffusion models. *Journal of Econometrics*, 84(1), 77–105. (Relevant for MLE calibration methodology.)
+
+**C++ implementations**
+- QuantLib [Merton76Process](https://rkapl123.github.io/QLAnnotatedSource/df/d83/class_quant_lib_1_1_merton76_process.html), [JumpDiffusionEngine](https://rkapl123.github.io/QLAnnotatedSource/dd/d6b/class_quant_lib_1_1_jump_diffusion_engine.html)
+- QuantLib test suite: [jumpdiffusion.cpp](https://github.com/lballabio/QuantLib/blob/master/test-suite/jumpdiffusion.cpp)
+- [Merton-Jump-Diffusion-CPP](https://github.com/QGoGithub/Merton-Jump-Diffusion-CPP) (standalone MIT implementation)
+- [QuantStart: Jump-diffusion models for European options in C++](https://www.quantstart.com/articles/Jump-Diffusion-Models-for-European-Options-Pricing-in-C/)

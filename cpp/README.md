@@ -225,3 +225,11 @@ Requirements:
 - Docker
 Everything else will be pulled into the container.
 
+## References
+
+- Merton, R.C. (1976). Option pricing when underlying stock returns are discontinuous. *Journal of Financial Economics*, 3(1–2), 125–144.
+- QuantLib [Merton76Process](https://rkapl123.github.io/QLAnnotatedSource/df/d83/class_quant_lib_1_1_merton76_process.html), [JumpDiffusionEngine](https://rkapl123.github.io/QLAnnotatedSource/dd/d6b/class_quant_lib_1_1_jump_diffusion_engine.html)
+- QuantLib test suite: [jumpdiffusion.cpp](https://github.com/lballabio/QuantLib/blob/master/test-suite/jumpdiffusion.cpp)
+- [Merton-Jump-Diffusion-CPP](https://github.com/QGoGithub/Merton-Jump-Diffusion-CPP) (standalone MIT implementation)
+- [QuantStart: Jump-diffusion models for European options in C++](https://www.quantstart.com/articles/Jump-Diffusion-Models-for-European-Options-Pricing-in-C/)
+
