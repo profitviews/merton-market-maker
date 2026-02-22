@@ -1,3 +1,5 @@
+![](/assets/images/merton-bot.png)
+
 # Merton Market Maker: C++26 Reflection + PyBind11
 **Solving the Speed-to-Market vs Speed-to-Book Tension in Algorithmic Trading.**
 
