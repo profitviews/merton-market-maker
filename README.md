@@ -1,200 +1,62 @@
-# Merton Market Maker
+# Merton Market Maker: C++26 Reflection + PyBind11
+**Solving the "Speed-to-Market" vs. "Speed-to-Book" Tension in Algorithmic Trading.**
 
-This repository implements an end-to-end Merton jump-diffusion workflow for:
+---
 
-- offline calibration from historical data
-- real-time theoretical price computation
-- C++ acceleration for online/adaptive parameter updates
+⚠️ **The "No Alpha" Disclaimer**
 
-## What This Repo Contains
+This project is an engineering demonstration. The included Merton Jump Diffusion (MJD) algorithm is a standard, textbook model used to provide a real-world context.
+* This is not a "money-printing" bot.
+* It exposes no novel alpha.
+* The value is in the infrastructure, not the strategy.
 
-- `jump_diff.ipynb`  
-  Notebook for data loading, return construction, MLE calibration, and fit visualization.
-- `profitview_merton_signal.py`  
-  [ProfitView](https://profitview.net) strategy script that consumes live market updates and computes theoretical value.
-- `cpp/`  
-  C++ core (`OnlineMertonCalibrator`) + reflection-based Python extension module build.
+---
+## A Practical Hybrid Workflow
+The algorithmic trading world is often split into two camps:
 
-## Model Summary
+1. **Speed-to-Market (Python)**: Rapid iteration, research, and backtesting.
+2. **Speed-to-Book (C++)**: Low-latency execution and high-performance pricing math.
 
-The core expectation used for fair value is:
+While it has always been possible to bridge these worlds using PyBind11 (or CFFI etc), the manual "boilerplate tax" is usually too cumbersome for day-to-day use. Quants writing pricing models shouldn't have to manually update a binding layer just to see the result in their Python strategy.  A quant-dev with both C++ and Python shouldn't have to be brought in.
 
-- `E[S_T] = S_0 * exp((r - q - lambda * k) * T)`
-- `k = exp(mu_j + 0.5 * delta_j^2) - 1`
+C++26 Reflection (P2996) changes this. It is *compiler supported* compile-time programming. We can automate the "bridge" entirely and reliably. This project demonstrates how reflection makes the hybrid Python/C++ model practical for daily development and provides an end-to-end working example.
 
-Where:
+## Through the Mirror into a New C++ World
+Instead of writing a `.def()` for every C++ function, we use a generic reflection loop. When you add or change a public method in your C++ math engine, the Python bindings update automatically at compile-time.
+```c++
+template <typename T>
+void bind_reflected_member_functions(py::class_<T>& cl) {
+    // 1. Inspect the class at compile-time
+    constexpr auto members = std::define_static_array(
+        members_of(^^T, access_context::current()));
 
-- `sigma, lambda, mu_j, delta_j` come from calibration
-- `q` is funding-rate carry (annualized)
-- `T` is horizon (commonly the next 8h funding window)
-
-The jump-diffusion process assumed is:
-
-`dS_t / S_t = (r - q - lambda * k) dt + sigma dW_t + (J - 1) dN_t`
-
-with `k = E[J - 1] = exp(mu_j + 0.5 * delta_j^2) - 1`.
-
-## Mathematical Framework
-
-### Process specification
-
-The asset price $S_t$ follows a Merton (1976) jump-diffusion:
-
-$$
-\frac{dS_t}{S_t} = (\mu - \lambda \kappa)\,dt + \sigma\,dW_t + (J - 1)\,dN_t
-$$
-
-where:
-
-- $W_t$ is a standard Brownian motion
-- $N_t$ is a Poisson process with intensity $\lambda$ (jumps per year)
-- $J$ is the multiplicative jump size; $\log J \sim \mathcal{N}(\mu_J, \delta_J^2)$
-
-The jump compensator $\kappa = \mathbb{E}[J - 1]$ removes jump drift from the instantaneous return:
-
-$$
-\kappa = e^{\mu_J + \frac{1}{2}\delta_J^2} - 1
-$$
-
-Under the risk-neutral measure (or for fair-value pricing), the drift is $r - q - \lambda\kappa$, where $r$ is the risk-free rate and $q$ is the carry (e.g. funding rate annualized).
-
-### Fair value
-
-Under the model, the forward expectation is:
-
-$$
-\mathbb{E}[S_T \mid S_0] = S_0 \, \exp\bigl((r - q - \lambda\kappa)\,T\bigr)
-$$
-
-### Log-return distribution
-
-Let $x_t = \log(S_t / S_{t-\Delta t})$ denote the log return over $\Delta t$. The PDF is a Poisson-weighted Gaussian mixture:
-
-$$
-f(x \mid \sigma, \lambda, \mu_J, \delta_J, \Delta t)
-  = \sum_{n=0}^{n_{\max}} \frac{e^{-\lambda \Delta t}(\lambda \Delta t)^n}{n!}
-    \cdot \phi\left(\frac{x - \mu_n}{\sigma_n}\right) \frac{1}{\sigma_n}
-$$
-
-where $\phi$ is the standard normal density and, conditioning on $n$ jumps:
-
-$$
-\mu_n = \left(-\lambda\kappa - \frac{\sigma^2}{2}\right)\Delta t + n\mu_J,
-\quad
-\sigma_n^2 = \sigma^2 \Delta t + n \delta_J^2
-$$
-
-### Calibration objective
-
-We fit parameters by maximum likelihood over observed returns $\{x_i\}$:
-
-$$
-\hat\theta = \arg\min_\theta \;
-  \mathcal{L}(\theta) = -\sum_i \log f(x_i \mid \theta, \Delta t)
-$$
-
-with $\theta = (\sigma, \lambda, \mu_J, \delta_J)$ and $\theta$ constrained to plausible ranges.
-
-## Conceptual Architecture
-
-### Phase A: Offline Calibration (Python)
-
-- Data: historical bars or resampled trade data
-- Feature: log-returns `x_t = ln(P_t / P_(t-1))`
-- Method: MLE over a truncated Merton mixture PDF
-
-The likelihood uses a Poisson-weighted Gaussian mixture:
-
-`f(x) = sum_{n=0..n_max-1} exp(-lambda*dt) (lambda*dt)^n / n! * N(x; mu_n, sigma_n^2)`
-
-where `mu_n` and `sigma_n^2` are Merton-adjusted jump moments for jump count `n`.
-
-Output parameters are annualized `[sigma, lambda, mu_j, delta_j]`.
-
-### Phase B: Runtime Valuation And Adaptation (C++)
-
-Current runtime implementation in `cpp/` is:
-
-- `OnlineMertonCalibrator::update_tick(...)` for rolling return ingestion
-- `OnlineMertonCalibrator::maybe_update_params()` for gated local online updates
-- `OnlineMertonCalibrator::fair_value(...)` for fast expectation pricing
-- `OnlineMertonCalibrator::fair_value_quantlib(...)` To show how QuantLib easily integrated.
-
-### Phase C: Python Integration Layer
-
-- C++ is exposed to Python via `pybind11`
-- Binding code is in `cpp/src/python_module_entry.cpp`
-- Member/field exposure is generated through C++26 compile-time reflection helpers in
-  `cpp/include/reflection_engine.hpp`
-
-The [ProfitView](https://profitview.net) strategy (`profitview_merton_signal.py`) consumes this module directly.
-
-## Typical Workflow
-
-1. **Offline calibration (Notebook)**
-   - Load historical data (BitMEX API or local Parquet trades)
-   - Build returns (resampled bars)
-   - Run MLE to estimate `sigma, lambda, mu_j, delta_j` (these will be put in `.env`)
-
-2. **Build C++ module (optional but recommended for runtime adaptation)**
-   - In `cpp/`, run `just test`
-   - Produces and validates `cpp/build/merton_online_calibrator.so`
-
-3. **Run strategy**
-   - Use `profitview_merton_signal.py` in ProfitView
-   - Feed live ticks to the calibrator
-   - Compare theoretical value vs market price in real time
-
-## Environment Configuration (`.env`)
-
-1. Copy `.env.example` to `.env`
-2. Set `MERTON_MARKET_MAKER_DATA_PATH` to your local parquet directory
-3. Add Merton parameters (above)
-4. Notebook uses these value if present; all other defaults remain in code
-
-## C++ Module (`cpp/`)
-
-The C++ module provides:
-
-- rolling tick ingestion (`update_tick`)
-- online parameter updates (`maybe_update_params`)
-- fair-value calculation (`fair_value`)
-
-Bindings are generated via compile-time reflection + pybind11 entrypoint.
-
-For full C++ design/build/binding details, see [`cpp/README.md`](cpp/README.md).
-
-### Quick commands
-
-```bash
-cd cpp
-just test
+    // 2. Filter and bind automatically
+    template for (constexpr auto m : members) {
+        if constexpr (is_public(m) && is_function(m) && !is_constructor(m)) {
+            cl.def(identifier_of(m).data(), &[:m:]);
+        }
+    }
 ```
+*Now, any public method added to the C++ engine is instantly available in the Python execution environment without a single extra line of binding code.*
 
-This builds in Docker (host mode) or locally in the container (container mode), then runs a module smoke test.
+Note the new C++ syntax: the "double-hat" reflection operator `^^T` which converts a type into a `meta` (reflected) "value", and the "splicer" `[:m:]` converts constituents back to run-time expressions.
 
-The p2996 Clang compiler can also be used ad-hoc: `just shell` for an interactive bash, `just clang-pp -- ...` or `cpp/merton-clang++ ...` to compile from the host. See [cpp/README.md](cpp/README.md) for details.
+---
+## Why Merton Jump Diffusion?
+We chose the MJD model because its math is heavy - it requires infinite series summations that would crawl in pure Python. It perfectly illustrates the "Speed-to-Book" necessity for the math, while the high-level trading logic benefits from Python's "Speed-to-Market."
 
-## Runtime Target
+## Technical Stack
+Since C++26 reflection requires the experimental Bloomberg Clang P2996 fork, we have containerized the toolchain and provided a `justfile` to make it accessible without a manual compiler build.
 
-The Docker and module build are aligned with:
+### Prerequisites
+* [Docker](https://www.docker.com/)
+* [`just`](https://github.com/casey/just)
 
-- Ubuntu 22.04
-- Python 3.9 (ProfitView-compatible target)
+See [BUILD](/cpp/BUILD.md) for complete information on building and running.
 
-## Notes
-
-- If you use the compiled `.so`, validate/import it with Python 3.9-compatible runtime.
-- Notebook calibration and C++ online adaptation can be used independently.
-
-## References
-
-**Model**
-- Merton, R.C. (1976). Option pricing when underlying stock returns are discontinuous. *Journal of Financial Economics*, 3(1–2), 125–144.
-- Honoré, P. (1998). Pitfalls in estimating jump-diffusion models. *Journal of Econometrics*, 84(1), 77–105. (Relevant for MLE calibration methodology.)
-
-**C++ implementations**
-- QuantLib [Merton76Process](https://rkapl123.github.io/QLAnnotatedSource/df/d83/class_quant_lib_1_1_merton76_process.html), [JumpDiffusionEngine](https://rkapl123.github.io/QLAnnotatedSource/dd/d6b/class_quant_lib_1_1_jump_diffusion_engine.html)
-- QuantLib test suite: [jumpdiffusion.cpp](https://github.com/lballabio/QuantLib/blob/master/test-suite/jumpdiffusion.cpp)
-- [Merton-Jump-Diffusion-CPP](https://github.com/QGoGithub/Merton-Jump-Diffusion-CPP) (standalone MIT implementation)
-- [QuantStart: Jump-diffusion models for European options in C++](https://www.quantstart.com/articles/Jump-Diffusion-Models-for-European-Options-Pricing-in-C/)
+## References & Further Reading
+* Blog Post: [Stop Choosing: Get C++ Performance in Python Algos with C++26](https://profitview.net/blog/cpp26-reflection-python-algo-trading)
+* [P2996 - Reflection for C++26](https://wg21.link/p2996)
+* [Callum Piper](https://www.linkedin.com/in/callum-piper-3691373/)'s [talk](https://youtu.be/SJ0NFLpR9vE) from ACCU 2025.
+* Reference deployment: [ProfitView](https://profitview.net/).
+* See [THEORY](/cpp/THEORY.md)
