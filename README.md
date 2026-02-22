@@ -22,7 +22,7 @@ While it has always been possible to bridge these worlds using PyBind11 (or CFFI
 C++26 Reflection (P2996) changes this. It is *compiler supported* compile-time programming. We can automate the "bridge" entirely and reliably. This project demonstrates how reflection makes the hybrid Python/C++ model practical for daily development and provides an end-to-end working example.
 
 ## Through the Mirror into a New C++ World
-Instead of writing a `.def()` for every C++ function, we use a generic reflection loop. When you add or change a public method in your C++ math engine, the Python bindings update automatically at compile-time.
+Instead of writing a `.def()` for every C++ function, I used a generic reflection loop. When you add or change a public method in your C++ math engine, the Python bindings update automatically at compile-time.
 ```c++
 template <typename T>
 void bind_reflected_member_functions(py::class_<T>& cl) {
@@ -43,10 +43,10 @@ Note the new C++ syntax: the "double-hat" reflection operator `^^T` which conver
 
 ---
 ## Why Merton Jump Diffusion?
-We chose the MJD model because its math is heavy - it requires infinite series summations that would crawl in pure Python. It perfectly illustrates the "Speed-to-Book" necessity for the math, while the high-level trading logic benefits from Python's "Speed-to-Market."
+I chose the MJD model because its math is heavy - it requires infinite series summations that would crawl in pure Python. It perfectly illustrates the "Speed-to-Book" necessity for the math, while the high-level trading logic benefits from Python's "Speed-to-Market."
 
 ## Technical Stack
-Since C++26 reflection requires the experimental Bloomberg Clang P2996 fork, we have containerized the toolchain and provided a `justfile` to make it accessible without a manual compiler build.
+Since C++26 reflection requires the experimental Bloomberg Clang P2996 fork, I  containerized the toolchain and provided a `justfile` to make it accessible without a manual compiler build.
 
 ### Prerequisites
 * [Docker](https://www.docker.com/)
