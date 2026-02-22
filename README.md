@@ -1,12 +1,12 @@
 # Merton Market Maker: C++26 Reflection + PyBind11
-**Solving the "Speed-to-Market" vs. "Speed-to-Book" Tension in Algorithmic Trading.**
+**Solving the Speed-to-Market vs Speed-to-Book Tension in Algorithmic Trading.**
 
 ---
 
 ⚠️ **The "No Alpha" Disclaimer**
 
 This project is an engineering demonstration. The included Merton Jump Diffusion (MJD) algorithm is a standard, textbook model used to provide a real-world context.
-* This is not a "money-printing" bot.
+* This is not a money-printing bot.
 * It exposes no novel alpha.
 * The value is in the infrastructure, not the strategy.
 
