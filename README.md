@@ -62,3 +62,8 @@ See [BUILD](/cpp/BUILD.md) for complete information on building and running.
 * [Callum Piper](https://www.linkedin.com/in/callum-piper-3691373/)'s [talk](https://youtu.be/SJ0NFLpR9vE) from ACCU 2025.
 * Reference deployment: [ProfitView](https://profitview.net/).
 * See [THEORY](/cpp/THEORY.md)
+
+If you need more information or are interested in building a system using C++ reflection, feel free to contact me: 
+* [LinkedIn](https://www.linkedin.com/in/rthickling/)
+* richard@profitview.net
+* richard.t.hickling@gmail.com
