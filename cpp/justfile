@@ -5,6 +5,8 @@ pyver := env_var_or_default("PY_VER", "3.9")
 ubuntu_ver := env_var_or_default("UBUNTU_VERSION", "22.04")
 binding := env_var_or_default("MERTON_PYTHON_BINDING", "nanobind")
 docker_network := env_var_or_default("DOCKER_NETWORK", "host")
+module_name := "merton_online_calibrator.so"
+module_dest_dir := env_var_or_default("MODULE_DEST_DIR", "")
 root := justfile_directory()
 
 default:
@@ -25,10 +27,22 @@ build-host: docker-build
       -DPython3_EXECUTABLE=/usr/bin/python{{pyver}} \
       -DMERTON_PYTHON_BINDING={{binding}} && \
     cmake --build /workspace/build"
+  if [ -n "{{module_dest_dir}}" ]; then \
+    install -d "{{module_dest_dir}}" && \
+    cp -f "{{root}}/build/{{module_name}}" "{{module_dest_dir}}/"; \
+  fi
 
 test-host: build-host
   docker run --network {{docker_network}} --rm -v "{{root}}:/workspace" {{image}} bash -lc "\
     PYTHONPATH=/workspace/build python{{pyver}} -m pytest /workspace/tests"
+
+copy-module:
+  if [ -z "{{module_dest_dir}}" ]; then \
+    echo "Set MODULE_DEST_DIR to the destination directory."; \
+    exit 1; \
+  fi
+  install -d "{{module_dest_dir}}"
+  cp -f "{{root}}/build/{{module_name}}" "{{module_dest_dir}}/"
 
 # Interactive shell with clang++ (p2996) and QuantLib on PATH for ad-hoc compilation.
 shell:
@@ -45,6 +59,10 @@ build-local:
     -DPython3_EXECUTABLE=/usr/bin/python{{pyver}} \
     -DMERTON_PYTHON_BINDING={{binding}}
   cmake --build {{root}}/build
+  if [ -n "{{module_dest_dir}}" ]; then \
+    install -d "{{module_dest_dir}}" && \
+    cp -f "{{root}}/build/{{module_name}}" "{{module_dest_dir}}/"; \
+  fi
 
 test-local: build-local
   PYTHONPATH={{root}}/build python{{pyver}} -m pytest {{root}}/tests
