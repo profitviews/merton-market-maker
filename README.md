@@ -77,7 +77,7 @@ Since C++26 reflection currently requires the experimental Bloomberg Clang P2996
 * [Docker](https://www.docker.com/)
 * [`just`](https://github.com/casey/just)
 
-See [BUILD](/cpp/BUILD.md) for complete information on building and running, including `MERTON_PYTHON_BINDING` for choosing `pybind11` or `nanobind`.
+See [BUILD](/cpp/BUILD.md) for complete information on building and running, including `MERTON_PYTHON_BINDING` for choosing `pybind11` or `nanobind`. For first-time setup, run `cd cpp && just setup-defaults`, or start from `cpp/.merton-build.env.example`.
 
 ## References & Further Reading
 * Blog Post: [Stop Choosing: Get C++ Performance in Python Algos with C++26](https://profitview.net/blog/cpp26-reflection-python-algo-trading)

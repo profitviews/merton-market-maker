@@ -5,12 +5,32 @@ This repo includes `cpp/CMakeLists.txt` for:
 - static core library `merton_core`
 - Python extension module `merton_online_calibrator` (`.so` or platform-tagged name depending on backend)
 
+## First-time setup
+
+Run this once to choose your preferred defaults with interactive explanations for:
+
+- `PY_VER`
+- `UBUNTU_VERSION`
+- `MERTON_PYTHON_BINDING`
+- `DOCKER_NETWORK`
+- `IMAGE_NAME`
+- `MODULE_DEST_DIR`
+
+```bash
+cd cpp
+just setup-defaults
+```
+
+This writes `cpp/.merton-build.env`. Later commands use those defaults automatically, and you can still override any value for a single command by prefixing an environment variable.
+
+A checked-in example lives at `cpp/.merton-build.env.example`.
+
 ## Choose a binding backend
 
 Set `MERTON_PYTHON_BINDING` to either:
 
-- `pybind11` (default)
-- `nanobind`
+- `nanobind` (current `just` fallback default unless overridden in `cpp/.merton-build.env`)
+- `pybind11`
 
 ### CMake examples
 
@@ -46,7 +66,7 @@ MERTON_PYTHON_BINDING=nanobind just test
 
 The reflection-based binding logic is shared conceptually but implemented in parallel headers under `include/reflection_bind_*.hpp`.
 
-With `nanobind`, the extension filename follows Python's platform tag (for example `merton_online_calibrator.cpython-39-x86_64-linux-gnu.so`). Keep `build/` on `PYTHONPATH` as usual; `import merton_online_calibrator` works the same.
+Both backends now emit the plain shared library name `merton_online_calibrator.so`, so deployment into ProfitView is straightforward. Keep `build/` on `PYTHONPATH` as usual; `import merton_online_calibrator` works the same.
 
 ## Self-contained Docker build (recommended)
 
@@ -59,20 +79,22 @@ This will:
 
 - build the local `cpp/Dockerfile` image
 - configure using local `cpp/toolchain-p2996.cmake`
-- produce `cpp/build/merton_online_calibrator` (`.so` with `pybind11`, or Python's tagged suffix with `nanobind`)
+- produce `cpp/build/merton_online_calibrator.so`
 - run the `pytest` suite in `tests/` inside the container with Python 3.9
 
-Override Python version if needed:
+Inspect the currently active defaults:
+
+```bash
+just show-defaults
+```
+
+Override any setting for one command if needed:
 
 ```bash
 PY_VER=3.9 just test
-```
-
-Override backend or Docker networking if needed:
-
-```bash
-MERTON_PYTHON_BINDING=nanobind just test
+MERTON_PYTHON_BINDING=pybind11 just test
 DOCKER_NETWORK=bridge just docker-build
+MODULE_DEST_DIR=/path/to/profitview-mount just build-host
 ```
 
 ## Ad-hoc compiler use
