@@ -45,8 +45,8 @@ ARG CLANG_P2996_BRANCH=p2996
 		libedit2 libboost-all-dev && \
 		rm -rf /var/lib/apt/lists/*
 
-RUN python3 -m pip install --no-cache-dir pybind11 pytest && \
-	python${PYTHON_VERSION} -m pip install --no-cache-dir pybind11 pytest
+RUN python3 -m pip install --no-cache-dir pybind11 nanobind pytest && \
+	python${PYTHON_VERSION} -m pip install --no-cache-dir pybind11 nanobind pytest
 
 	# Install just (recipe runner for justfile)
 	RUN curl -sSf https://just.systems/install.sh | bash -s -- --to /usr/local/bin

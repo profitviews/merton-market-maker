@@ -3,28 +3,31 @@ set shell := ["bash", "-cu"]
 image := env_var_or_default("IMAGE_NAME", "merton-refl-build")
 pyver := env_var_or_default("PY_VER", "3.9")
 ubuntu_ver := env_var_or_default("UBUNTU_VERSION", "22.04")
+binding := env_var_or_default("MERTON_PYTHON_BINDING", "pybind11")
+docker_network := env_var_or_default("DOCKER_NETWORK", "host")
 root := justfile_directory()
 
 default:
   @just test
 
 docker-build:
-  docker build -t {{image}} \
+  docker build --network={{docker_network}} -t {{image}} \
     --build-arg UBUNTU_VERSION={{ubuntu_ver}} \
     --build-arg PYTHON_VERSION={{pyver}} \
     -f {{root}}/Dockerfile \
     {{root}}
 
 build-host: docker-build
-  docker run --rm -v "{{root}}:/workspace" {{image}} bash -lc "\
+  docker run --network {{docker_network}} --rm -v "{{root}}:/workspace" {{image}} bash -lc "\
     rm -rf /workspace/build && \
     cmake -S /workspace -B /workspace/build -G Ninja \
       -DCMAKE_TOOLCHAIN_FILE=/workspace/toolchain-p2996.cmake \
-      -DPython3_EXECUTABLE=/usr/bin/python{{pyver}} && \
+      -DPython3_EXECUTABLE=/usr/bin/python{{pyver}} \
+      -DMERTON_PYTHON_BINDING={{binding}} && \
     cmake --build /workspace/build"
 
 test-host: build-host
-  docker run --rm -v "{{root}}:/workspace" {{image}} bash -lc "\
+  docker run --network {{docker_network}} --rm -v "{{root}}:/workspace" {{image}} bash -lc "\
     PYTHONPATH=/workspace/build python{{pyver}} -m pytest /workspace/tests"
 
 # Interactive shell with clang++ (p2996) and QuantLib on PATH for ad-hoc compilation.
@@ -39,7 +42,8 @@ build-local:
   rm -rf {{root}}/build
   cmake -S {{root}} -B {{root}}/build -G Ninja \
     -DCMAKE_TOOLCHAIN_FILE={{root}}/toolchain-p2996.cmake \
-    -DPython3_EXECUTABLE=/usr/bin/python{{pyver}}
+    -DPython3_EXECUTABLE=/usr/bin/python{{pyver}} \
+    -DMERTON_PYTHON_BINDING={{binding}}
   cmake --build {{root}}/build
 
 test-local: build-local
@@ -53,4 +57,3 @@ build:
 
 test:
   if command -v docker >/dev/null 2>&1; then just test-host; else just test-local; fi
-

@@ -1,5 +1,6 @@
 {
   "terminal.integrated.env.linux": {
     "PYENV_VERSION": "merton-market-maker"
-  }
+  },
+  "C_Cpp.errorSquiggles": "disabled"
 }

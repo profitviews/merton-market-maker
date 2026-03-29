@@ -1,12 +1,12 @@
 #include "merton_online_calibrator.hpp"
-#include "reflection_engine.hpp"
+#include "reflection_bind_pybind11.hpp"
 
 #include <pybind11/pybind11.h>
 
 namespace py = pybind11;
 
 PYBIND11_MODULE(merton_online_calibrator, m) {
-    m.doc() = "Online Merton jump-diffusion calibrator (reflection bindings)";
+    m.doc() = "Online Merton jump-diffusion calibrator (reflection bindings, pybind11)";
 
     py::class_<merton::MertonParams> p(m, "MertonParams");
     p.def(py::init<>());
@@ -20,4 +20,3 @@ PYBIND11_MODULE(merton_online_calibrator, m) {
     cl.def(py::init<merton::MertonParams, merton::CalibratorConfig>(), py::arg("initial"), py::arg("config") = merton::CalibratorConfig{});
     bind_reflected_member_functions(cl);
 }
-

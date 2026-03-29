@@ -1,11 +1,13 @@
 # C++ Core For Real-Time Adaptive Merton Updates
 
-This folder contains the heavy runtime path in C++ and a reflection-based pybind module stub.
+This folder contains the heavy runtime path in C++ and a reflection-based Python extension module with interchangeable `pybind11` and `nanobind` backends.
 
 ## What Is Implemented
 
 - `OnlineMertonCalibrator` in `include/merton_online_calibrator.hpp` / `src/merton_online_calibrator.cpp`
-- Python extension stub in `src/python_module_entry.cpp` using `include/reflection_engine.hpp`
+- Python binding entry points `src/python_module_entry_pybind11.cpp` and `src/python_module_entry_nanobind.cpp`
+- Reflection-based backend adapters in `include/reflection_bind_pybind11.hpp` and `include/reflection_bind_nanobind.hpp`
+- Shared reflected field accessors in `include/reflection_accessors.hpp`
 - Heavy computation path:
   - rolling return ingestion from ticks
   - Merton jump-diffusion negative log-likelihood over a rolling window
@@ -14,12 +16,39 @@ This folder contains the heavy runtime path in C++ and a reflection-based pybind
   - `E[S_T] = S_0 * exp((r - q - lambda * k) * T)`
   - `k = exp(mu_j + 0.5 * delta_j^2) - 1`
 
-The heavy likelihood path uses an internal standard-normal density implementation
-to keep the core portable in minimal build environments.
+The heavy likelihood path uses an internal standard-normal density implementation to keep the core portable in minimal build environments.
+
+## Binding Backends
+
+Backend selection is controlled by the CMake option `MERTON_PYTHON_BINDING`.
+
+### `pybind11`
+
+```c++
+PYBIND11_MODULE(merton_online_calibrator, m) {
+    py::class_<merton::OnlineMertonCalibrator> cl(m, "OnlineMertonCalibrator");
+    cl.def(py::init<merton::MertonParams, merton::CalibratorConfig>(),
+           py::arg("initial"), py::arg("config") = merton::CalibratorConfig{});
+    bind_reflected_member_functions(cl);
+}
+```
+
+### `nanobind`
+
+```c++
+NB_MODULE(merton_online_calibrator, m) {
+    nb::class_<merton::OnlineMertonCalibrator> cl(m, "OnlineMertonCalibrator");
+    cl.def(nb::init<merton::MertonParams, merton::CalibratorConfig>(),
+           "initial"_a, "config"_a = merton::CalibratorConfig{});
+    bind_reflected_member_functions(cl);
+}
+```
+
+Both backends expose the same Python-facing API and the same reflected public members and methods.
 
 ## Binding Surface
 
-The module target `merton_online_calibrator.so` exposes:
+The extension module `merton_online_calibrator` exposes the following API (filename may be `merton_online_calibrator.so` with `pybind11` or a Python-tagged suffix with `nanobind`):
 
 - constructor: `OnlineMertonCalibrator(MertonParams initial, CalibratorConfig config={})`
 - `bool update_tick(double price, int64_t epoch_us)`
@@ -29,11 +58,7 @@ The module target `merton_online_calibrator.so` exposes:
 - `MertonParams params() const`
 - `size_t sample_count() const`
 
-All data members and public instance methods are bound through the
-reflection engine in `include/reflection_engine.hpp` (no hand-written
-per-member/per-method pybind mappings). Note that Python access to the
-`lambda` field uses `getattr(obj, "lambda")` / `setattr(obj, "lambda", v)`
-because `lambda` is a Python keyword.
+All data members and public instance methods are bound through the reflection headers, with no hand-written per-member or per-method mappings. Note that Python access to the `lambda` field uses `getattr(obj, "lambda")` / `setattr(obj, "lambda", v)` because `lambda` is a Python keyword.
 
 Python usage pattern:
 
@@ -146,9 +171,9 @@ for each market tick (price, ts_us):
 
 ## References
 
-- Merton, R.C. (1976). Option pricing when underlying stock returns are discontinuous. *Journal of Financial Economics*, 3(1–2), 125–144.
+- Merton, R.C. (1976). Option pricing when underlying stock returns are discontinuous. *Journal of Financial Economics*, 3(1-2), 125-144.
 - QuantLib [Merton76Process](https://rkapl123.github.io/QLAnnotatedSource/df/d83/class_quant_lib_1_1_merton76_process.html), [JumpDiffusionEngine](https://rkapl123.github.io/QLAnnotatedSource/dd/d6b/class_quant_lib_1_1_jump_diffusion_engine.html)
 - QuantLib test suite: [jumpdiffusion.cpp](https://github.com/lballabio/QuantLib/blob/master/test-suite/jumpdiffusion.cpp)
 - [Merton-Jump-Diffusion-CPP](https://github.com/QGoGithub/Merton-Jump-Diffusion-CPP) (standalone MIT implementation)
 - [QuantStart: Jump-diffusion models for European options in C++](https://www.quantstart.com/articles/Jump-Diffusion-Models-for-European-Options-Pricing-in-C/)
-
+- [nanobind: tiny and efficient C++/Python bindings](https://github.com/wjakob/nanobind)
