@@ -207,3 +207,6 @@ marimo/_lsp/
 __marimo__/
 
 .history/
+
+# Local build defaults written by: just setup-defaults
+cpp/.merton-build.env
