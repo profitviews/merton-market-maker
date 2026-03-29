@@ -3,7 +3,7 @@ set shell := ["bash", "-cu"]
 image := env_var_or_default("IMAGE_NAME", "merton-refl-build")
 pyver := env_var_or_default("PY_VER", "3.9")
 ubuntu_ver := env_var_or_default("UBUNTU_VERSION", "22.04")
-binding := env_var_or_default("MERTON_PYTHON_BINDING", "pybind11")
+binding := env_var_or_default("MERTON_PYTHON_BINDING", "nanobind")
 docker_network := env_var_or_default("DOCKER_NETWORK", "host")
 root := justfile_directory()
 

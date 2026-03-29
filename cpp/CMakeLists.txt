@@ -147,6 +147,11 @@ if(MERTON_PYTHON_BINDING STREQUAL "nanobind")
             merton_core
             Python::Module
     )
+    set_target_properties(merton_online_calibrator PROPERTIES
+        PREFIX ""
+        OUTPUT_NAME "merton_online_calibrator"
+        SUFFIX ".so"
+    )
 endif()
 
 # Reflection defaults for portability when no external toolchain vars are provided.
@@ -178,6 +183,14 @@ target_compile_options(merton_online_calibrator PRIVATE ${REFLECT_PY_STRAT_CXX_F
 target_link_options(merton_online_calibrator PRIVATE ${REFLECT_PY_STRAT_LINK_FLAGS})
 target_include_directories(merton_core PRIVATE ${REFLECT_PY_STRAT_INCLUDE_DIRS})
 target_include_directories(merton_online_calibrator PRIVATE ${REFLECT_PY_STRAT_INCLUDE_DIRS})
+
+# nanobind builds a support library (`nanobind-static`) that must use the same
+# stdlib/toolchain settings as the reflection-based extension. Otherwise the
+# module can link but fail to import due to mixed libc++ / libstdc++ symbols.
+if(MERTON_PYTHON_BINDING STREQUAL "nanobind" AND TARGET nanobind-static)
+    target_compile_options(nanobind-static PRIVATE ${REFLECT_PY_STRAT_CXX_FLAGS})
+    target_include_directories(nanobind-static PRIVATE ${REFLECT_PY_STRAT_INCLUDE_DIRS})
+endif()
 
 # Explicit runtime linkage for portable extension loading.
 target_link_libraries(merton_online_calibrator PRIVATE
